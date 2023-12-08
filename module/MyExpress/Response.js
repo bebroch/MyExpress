@@ -1,6 +1,7 @@
 export class Response {
-	constructor(res) {
+	constructor(res, method) {
 		this.res = res;
+		this.method = method;
 	}
 
 	toString(data) {

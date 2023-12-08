@@ -17,22 +17,56 @@ export class MyExpress {
 	use(module) {
 		if (module instanceof Router) {
 			this.routers = Router.parse(module);
+			return;
 		}
 
 		console.warn("Undefined module", module);
 	}
 
 	async getCallbackByRoute(httpReq, httpRes) {
-		const callback = this.routers[httpReq.url];
-		const res = new Response(httpRes);
+		const { callback, middlewares, method } = this.routers[httpReq.url];
+		console.log(this.routers[httpReq.url]);
+		const res = new Response(httpRes, method);
 
 		if (!callback) return res.notFound();
 
 		try {
-			await callback(httpReq, res);
+			await Promise.all(
+				this.sendMiddlewareAndCallback(
+					httpReq,
+					res,
+					middlewares,
+					callback
+				)
+			);
 		} catch (err) {
 			console.error("Internal Server Error: " + err.message);
 			res.internalError();
+		}
+	}
+
+	async sendMiddlewareAndCallback(httpReq, res, middlewares, callback) {
+		if (middlewares.length === 0) {
+			return await callback(httpReq, res);
+		}
+
+		for (let i = 0; i < middlewares.length; i++) {
+			const middleware = middlewares[i];
+			const nextMiddleware = middlewares[i + 1];
+
+			if (nextMiddleware) {
+				await Promise.all(middleware(httpReq, res, nextMiddleware));
+			}
+
+			await Promise.all(
+				await middleware(httpReq, res, async () => {
+					try {
+						callback(httpReq, res);
+					} catch (err) {
+						console.log("ERROR");
+					}
+				})
+			);
 		}
 	}
 
