@@ -1,4 +1,4 @@
-import { MyExpress } from "../module/MyExpress/Server.js";
+import { MyExpress } from "../module/MyExpress/MyExpress.js";
 import router from "./routers/index.js";
 const PORT = 3000;
 
