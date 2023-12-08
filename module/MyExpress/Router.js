@@ -1,14 +1,18 @@
 export class Router {
 	constructor() {
-		this.routes = [];
+		this.routes = {};
 	}
 
-	getRoutes() {
+	static getRoutes() {
 		return this.routes;
 	}
 
+	static parse(routes) {
+		return routes.routes;
+	}
+
 	push(url, callback) {
-		this.routes.push({ url, callback });
+		this.routes[url] = callback;
 	}
 
 	use(url, callback) {
@@ -17,9 +21,13 @@ export class Router {
 		}
 
 		if (callback instanceof Router) {
-			callback.routes.forEach(item => {
-				this.push(url + item.url, item.callback);
-			});
+			const routes = callback.routes;
+			const chilesUrls = Object.keys(routes);
+
+			for (const childUrl of chilesUrls) {
+				const callback = routes[childUrl];
+				this.push(url + childUrl, callback);
+			}
 		}
 	}
 

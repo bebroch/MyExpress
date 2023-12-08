@@ -1,43 +1,42 @@
 import http from "http";
 import { Router } from "../../module/MyExpress/Router.js";
+import { Response } from "./Response.js";
 
 export class MyExpress {
 	constructor() {
-		this.routers = [];
+		this.routers = {};
 		this.app = http.Server();
 	}
 
 	createServer() {
-		this.app = http.createServer((req, res) => {
-			console.log(this.routers);
-
-			this.routers.forEach(route =>
-				this.getCallbackByRoute(route.url, route.callback, req, res)
-			);
-		});
-	}
-
-	getCallbackByRoute(url, callback, req, res) {
-		if (req.url === url) {
-			try {
-				callback(req, res);
-			} catch (err) {
-				res.statusCode = 500;
-				res.end();
-			}
-		}
+		this.app = http.createServer((req, res) =>
+			this.getCallbackByRoute(req, res)
+		);
 	}
 
 	use(module) {
 		if (module instanceof Router) {
-			module.getRoutes().forEach(item => {
-				this.routers.push(item);
-			});
-			console.log(this.routers);
+			this.routers = Router.parse(module);
+		}
+
+		console.warn("Undefined module", module);
+	}
+
+	async getCallbackByRoute(httpReq, httpRes) {
+		const callback = this.routers[httpReq.url];
+		const res = new Response(httpRes);
+
+		if (!callback) return res.notFound();
+
+		try {
+			await callback(httpReq, res);
+		} catch (err) {
+			console.error("Internal Server Error: " + err.message);
+			res.internalError();
 		}
 	}
 
-	listen(port, callback) {
+	async listen(port, callback) {
 		this.createServer();
 		this.app.listen(port, callback);
 	}

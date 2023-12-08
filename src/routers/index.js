@@ -4,7 +4,7 @@ import home from "./home.js";
 const router = new Router();
 
 router.get("/api", (req, res) => {
-	res.end("api");
+	res.success("Это метод API");
 });
 
 router.use("/api", home);
